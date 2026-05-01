@@ -1,0 +1,113 @@
+version: "3.9"
+
+services:
+
+  # ── Qdrant vector database ─────────────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    container_name: college-rag-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__HTTP_PORT: 6333
+      QDRANT__SERVICE__GRPC_PORT: 6334
+
+  # ── Python RAG microservice ────────────────────────────────────────────
+  rag-service:
+    build:
+      context: ./rag-service
+      dockerfile: Dockerfile
+    container_name: college-rag-python
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      EMBEDDING_MODEL: text-embedding-3-small
+      EMBEDDING_DIMS: 1536
+      LLM_MODEL: gpt-4o-mini
+      LLM_TEMPERATURE: 0.1
+      LLM_MAX_TOKENS: 1500
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      QDRANT_COLLECTION: college_rag
+      CHUNK_SIZE_TOKENS: 500
+      CHUNK_OVERLAP_TOKENS: 80
+      TOP_K: 5
+      MIN_SCORE: 0.30
+      RAG_SERVICE_PORT: 8000
+    depends_on:
+      - qdrant
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── MongoDB ────────────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7
+    container_name: college-rag-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Node.js backend ────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: college-rag-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      MONGODB_URI: mongodb://mongodb:27017/college-rag
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_CODE: ${ADMIN_CODE:-ADMIN2024}
+      NODE_ENV: production
+      FRONTEND_URL: http://localhost:3000
+      RAG_SERVICE_URL: http://rag-service:8000
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      - mongodb
+      - rag-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Next.js frontend ───────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: college-rag-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:5000/api
+    depends_on:
+      - backend
+
+volumes:
+  qdrant_data:
+  mongo_data:
+  uploads_data:

@@ -1,0 +1,93 @@
+# ========================
+# ENV & SECRETS 🔥
+# ========================
+.env
+.env.*
+!.env.example
+
+# ========================
+# NODE (Backend + Frontend)
+# ========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ========================
+# NEXT.JS
+# ========================
+.next/
+out/
+build/
+dist/
+
+# ========================
+# PYTHON (rag-service)
+# ========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual env
+venv/
+.env/
+.venv/
+ENV/
+env/
+
+# ========================
+# DOCKER
+# ========================
+*.log
+docker-compose.override.yml
+
+# ========================
+# UPLOADS (IMPORTANT)
+# ========================
+uploads/
+backend/uploads/
+
+# ========================
+# DATABASE / VECTORS
+# ========================
+# MongoDB local files (if any)
+*.db
+*.sqlite3
+
+# Qdrant local storage (if outside docker)
+qdrant_storage/
+
+# ========================
+# OS FILES
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# EDITOR / IDE
+# ========================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ========================
+# TEST / TEMP
+# ========================
+coverage/
+*.coverage
+.cache/
+tmp/
+temp/
+
+# ========================
+# MISC
+# ========================
+*.bak
+*.swp
+*.lock
